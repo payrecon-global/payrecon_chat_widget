@@ -1906,10 +1906,11 @@
       function linkify(text) {
         if (!text) return '';
 
-        var urlRegex = /(https?:\/\/[^\s]+)/g;
+        // Match https:// or http:// URLs, but ignore trailing punctuation
+        var urlRegex = /(https?:\/\/[^\s)]+)/g;
 
         return text.replace(urlRegex, function (url) {
-          return '<a href="' + url + '" target="_blank" rel="noopener" style="color:#60a5fa;text-decoration:underline">'
+          return '<a href="' + url + '" target="_blank" rel="noopener" style="color:var(--p); text-decoration:underline;">'
             + url +
             '</a>';
         });
