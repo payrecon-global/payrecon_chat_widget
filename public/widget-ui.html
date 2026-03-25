@@ -1764,7 +1764,7 @@
             + '<svg class="f-dl" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>'
             + '</a>';
         } else {
-          bub = '<div class="bub">' + esc(m.content || '') + '</div>';
+          bub = '<div class="bub">' + linkify(esc(m.content || '')) + '</div>';
         }
 
         row.innerHTML = nmHtml + bub + '<div class="ts">' + editedHtml + time + tkHtml + '</div>';
@@ -1902,6 +1902,17 @@
           .replace(/"/g, '&quot;')
           .replace(/'/g, '&#039;')
           .replace(/\n/g, '<br>');
+      }
+      function linkify(text) {
+        if (!text) return '';
+
+        var urlRegex = /(https?:\/\/[^\s]+)/g;
+
+        return text.replace(urlRegex, function (url) {
+          return '<a href="' + url + '" target="_blank" rel="noopener" style="color:#60a5fa;text-decoration:underline">'
+            + url +
+            '</a>';
+        });
       }
       function fmtBytes(b) {
         if (!b) return '';
