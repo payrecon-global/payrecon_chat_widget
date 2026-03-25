@@ -1620,6 +1620,7 @@
           headers: { 'Content-Type': 'application/json', 'x-webhook-secret': WHS },
           body: JSON.stringify({
             merchantId: MID, channelType: 'webstore',
+            channelName: BRAND,
             channelConversationId: sess.channelConversationId,
             customerId: sess.customerId, customerName: sess.customerName,
             content: text
@@ -1645,6 +1646,7 @@
           headers: { 'Content-Type': 'application/json', 'x-webhook-secret': WHS },
           body: JSON.stringify({
             merchantId: MID, channelType: 'webstore',
+            channelName: BRAND, 
             channelConversationId: sess.channelConversationId,
             customerId: sess.customerId, customerName: sess.customerName,
             content: caption || null, fileUrl: ud.fileUrl, fileName: ud.fileName,
