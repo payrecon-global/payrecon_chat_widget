@@ -1,8 +1,7 @@
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
-import dotenv from 'dotenv';
-dotenv.config();
 
 const app  = express();
 const PORT = parseInt(process.env.PORT || '4001');
@@ -13,9 +12,9 @@ app.use(cors());
 app.use(express.json({ limit: '2mb' }));
 app.use(express.static(path.join(__dirname, '../public')));
 
-// ✅ PUBLIC routes — define BEFORE any auth middleware
 app.get('/widget-config', (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Cache-Control', 'public, max-age=300, stale-while-revalidate=600');
   res.json({
     apiUrl:   BACKEND_API_URL,
     whSecret: WEBHOOK_SECRET,
@@ -38,9 +37,6 @@ app.get('/widget-ui', (req, res) => {
 app.get('/test', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/test.html'));
 });
-
-// ❌ If you have auth middleware, it should be HERE (after public routes)
-// app.use(authMiddleware);
 
 app.listen(PORT, () => {
   console.log(`Widget server running on http://localhost:${PORT}`);

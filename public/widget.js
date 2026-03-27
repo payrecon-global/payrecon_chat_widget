@@ -22,6 +22,7 @@
   var customerId    = params.get('customerId')   || '';
   var customerName  = params.get('customerName') || '';
   var customerEmail = params.get('customerEmail')|| '';
+  var customerRegion = params.get('customerRegion') || '';
 
   if (!merchantId) { console.error('[ChatWidget] merchantId is required'); return; }
 
@@ -89,6 +90,7 @@
     if (customerId)    url.searchParams.set('customerId',    customerId);
     if (customerName)  url.searchParams.set('customerName',  customerName);
     if (customerEmail) url.searchParams.set('customerEmail', customerEmail);
+    if (customerRegion) url.searchParams.set('customerRegion', customerRegion);
     return url.toString();
   }
 
