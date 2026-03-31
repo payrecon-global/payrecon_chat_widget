@@ -129,6 +129,7 @@
     btn.querySelector('#ico-x').style.display    = 'none';
     btn.setAttribute('aria-label', 'Open chat');
     setTimeout(function () { if (!open) panel.classList.remove('show'); }, 220);
+    iframe.contentWindow && iframe.contentWindow.postMessage({ type: 'CW_CLOSED' }, BASE_URL);
   }
 
   btn.addEventListener('click', function () { open ? closePanel() : openPanel(); });
