@@ -69,6 +69,7 @@
   var iframe = document.createElement('iframe');
   iframe.id = '__cw-iframe';
   iframe.setAttribute('title', 'Chat');
+  iframe.setAttribute('allow', 'microphone; camera');
 
   panel.appendChild(iframe);
   wrap.appendChild(btn);

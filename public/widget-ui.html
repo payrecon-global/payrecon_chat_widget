@@ -1589,7 +1589,13 @@
             if (recSecs >= 120) { stopRec(true); return; }
             recTime.textContent = Math.floor(recSecs / 60) + ':' + (recSecs % 60 < 10 ? '0' : '') + recSecs % 60;
           }, 1000);
-        } catch (e) { sysMsg('Microphone access denied.'); }
+        } catch (e) {
+          if (e.name === 'NotAllowedError') {
+            sysMsg('Microphone access is blocked in this context. Please open the chat in a new tab to send voice messages.');
+          } else {
+            sysMsg('Microphone access denied.');
+          }
+        }
       }
       function stopRec(send) {
         if (!recMR || !recOn) return;
