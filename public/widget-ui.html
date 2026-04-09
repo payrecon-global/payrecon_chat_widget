@@ -703,6 +703,19 @@
       color: var(--mut)
     }
 
+    /* ─── Link colors ─────────────────────────────────────────────────── */
+    .row.me a.chat-link {
+      color: rgba(255, 255, 255, 0.92) !important;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    .row.them a.chat-link {
+      color: var(--p) !important;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
     /* ─── Meta row ────────────────────────────────────────────────────── */
     .sender-nm {
       font-size: 10.5px;
@@ -2037,12 +2050,9 @@
       }
       function linkify(text) {
         if (!text) return '';
-
-        // Match https:// or http:// URLs, but ignore trailing punctuation
         var urlRegex = /(https?:\/\/[^\s)]+)/g;
-
         return text.replace(urlRegex, function (url) {
-          return '<a href="' + url + '" target="_blank" rel="noopener" style="color:var(--p); text-decoration:underline;">'
+          return '<a href="' + url + '" target="_blank" rel="noopener" class="chat-link">'
             + url +
             '</a>';
         });
