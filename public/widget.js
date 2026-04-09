@@ -112,6 +112,7 @@
 
   function openPanel() {
     open = true;
+    unread = 0;
     panel.classList.add('show');
     requestAnimationFrame(function () {
       requestAnimationFrame(function () { panel.classList.add('open'); });
@@ -119,7 +120,7 @@
     btn.querySelector('#ico-chat').style.display = 'none';
     btn.querySelector('#ico-x').style.display    = 'block';
     btn.setAttribute('aria-label', 'Close chat');
-    unread = 0; badge.textContent = ''; badge.classList.remove('on');
+    badge.textContent = ''; badge.classList.remove('on');
     iframe.contentWindow && iframe.contentWindow.postMessage({ type: 'CW_OPENED' }, BASE_URL);
   }
 
@@ -140,7 +141,7 @@
     var msg = e.data || {};
     if (msg.type === 'CW_CLOSE') closePanel();
     if (msg.type === 'CW_UNREAD' && !open) {
-      unread++;
+      unread = msg.count || 1;
       badge.textContent = unread > 9 ? '9+' : unread;
       badge.classList.add('on');
     }

@@ -1489,7 +1489,7 @@
       var pollT = null, pollInterval = 5000, lastHash = '', sending = false;
       var ws = null, wsReady = false;
       var audios = {};
-      var isWidgetVisible = true;
+      var isWidgetVisible = false;
 
       /* ── Boot ────────────────────────────────────────────────────────────── */
       if (UCID) {
@@ -1748,7 +1748,12 @@
                 if (isWidgetVisible) {
                   markSeen();
                 } else {
-                  window.parent.postMessage({ type: 'CW_UNREAD', count: d.messages.length }, '*');
+                  var unseenCount = d.messages.filter(function (m) {
+                    return m.senderType !== 'customer' && m.status !== 'seen';
+                  }).length;
+                  if (unseenCount > 0) {
+                    window.parent.postMessage({ type: 'CW_UNREAD', count: unseenCount }, '*');
+                  }
                 }
               }
             }
