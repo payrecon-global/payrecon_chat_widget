@@ -1663,10 +1663,9 @@
       function syncConvId(serverConvId) {
         if (!serverConvId) return;
         if (serverConvId !== sess.conversationId) {
-          // Server returned a different (or new) conversationId — update session
-          // and restart poll so we query the correct conversation.
           saveSess(Object.assign({}, sess, { conversationId: serverConvId }));
-         if (ws) { ws.close(); }
+          if (ws) { ws.close(); ws = null; }
+          wsReady = false;
           connectWS();
         } else if (!wsReady && !pollT) {
           connectWS();
@@ -1778,10 +1777,11 @@
           if (d.success && d.conversationId) {
             saveSess(Object.assign({}, sess, { conversationId: d.conversationId }));
             fetchMsgs();
+            connectWS();
+            return;
           }
         } catch (e) { }
-        // Always start polling regardless of whether an existing conv was found
-        connectWS();
+        startBackoffPoll();
       }
 
       function renderAll(list) {
@@ -1986,7 +1986,9 @@
 
       function connectWS() {
         if (!sess || !sess.conversationId) return;
-        var wsUrl = API.replace(/^http/, 'ws') + '?merchantId=' + encodeURIComponent(MID);
+        var proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        var wsUrl = proto + '//' + new URL(API).host + '/ws?merchantId=' + encodeURIComponent(MID);
+        // var wsUrl = API.replace(/^http/, 'ws') + '?merchantId=' + encodeURIComponent(MID);
         try {
           ws = new WebSocket(wsUrl);
           ws.onopen = function () {
