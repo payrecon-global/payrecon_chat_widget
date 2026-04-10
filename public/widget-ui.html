@@ -408,12 +408,43 @@
       white-space: nowrap
     }
 
+    /* CHANGE 1: Video modal — no native controls, tap overlay covers full area */
     #vm video {
       flex: 1;
       width: 100%;
       object-fit: contain;
       outline: none;
       padding-top: 44px;
+      /* hide native controls: no controls attribute + pointer-events:none so tap goes to overlay */
+      pointer-events: none;
+    }
+
+    /* Tap-to-play overlay for video modal */
+    #vm-tap-overlay {
+      position: absolute;
+      inset: 44px 0 0 0;
+      z-index: 52;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #vm-play-icon {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, .22);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity .25s, transform .2s;
+      pointer-events: none;
+    }
+
+    #vm-play-icon.hidden {
+      opacity: 0;
+      transform: scale(0.8);
     }
 
     /* ─── File bubble ─────────────────────────────────────────────────── */
@@ -520,11 +551,13 @@
       word-break: break-word;
       overflow-wrap: anywhere;
     }
+
     .row.me .f-msg {
-        color: rgba(255, 255, 255, 0.85);
+      color: rgba(255, 255, 255, 0.85);
     }
+
     .row.them .f-msg {
-        color: var(--txt);
+      color: var(--txt);
     }
 
     /* ─── Voice bubble ────────────────────────────────────────────────── */
@@ -691,23 +724,154 @@
       accent-color: var(--p);
     }
 
-    .v-time {
-      font-size: 10.5px
-    }
-
-    .row.me .v-time {
-      color: rgba(255, 255, 255, .7)
-    }
-
-    .row.them .v-time {
-      color: var(--mut)
-    }
-
     /* ─── Link colors ─────────────────────────────────────────────────── */
     .row.me a.chat-link {
       color: rgba(255, 255, 255, 0.92) !important;
       text-decoration: underline;
       text-underline-offset: 2px;
+    }
+
+    /* ─── Quoted / reply bubble ──────────────────────────────────────── */
+    .quoted {
+      border-radius: 8px;
+      padding: 6px 10px;
+      margin-bottom: 5px;
+      cursor: pointer;
+      font-size: 12px;
+      line-height: 1.45;
+      border-left: 3px solid rgba(255, 255, 255, .6);
+      background: rgba(255, 255, 255, .18);
+      max-width: 100%;
+      overflow: hidden;
+    }
+
+    .row.them .quoted {
+      border-left-color: var(--p);
+      background: rgba(37, 99, 235, .08);
+    }
+
+    .quoted-sender {
+      font-size: 10.5px;
+      font-weight: 600;
+      margin-bottom: 2px;
+      opacity: .85;
+    }
+
+    .quoted-text {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      opacity: .8;
+    }
+
+    .row--highlight {
+      animation: highlight-flash 1.6s ease;
+    }
+
+    @keyframes highlight-flash {
+      0% {
+        background: rgba(37, 99, 235, .18);
+        border-radius: 10px;
+      }
+
+      60% {
+        background: rgba(37, 99, 235, .18);
+        border-radius: 10px;
+      }
+
+      100% {
+        background: transparent;
+      }
+    }
+
+    /* ─── Reply hint button ───────────────────────────────────────────── */
+    .reply-hint {
+      display: none;
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(255, 255, 255, .92);
+      border: 1px solid var(--bdr);
+      border-radius: 50%;
+      width: 28px;
+      height: 28px;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 1px 6px rgba(0, 0, 0, .12);
+      cursor: pointer;
+      z-index: 5;
+      color: var(--p);
+      flex-shrink: 0;
+    }
+
+    .row.me .reply-hint {
+      left: -36px;
+    }
+
+    .row.them .reply-hint {
+      right: -36px;
+    }
+
+    .row:hover .reply-hint {
+      display: flex;
+    }
+
+    /* ─── Reply-to bar ────────────────────────────────────────────────── */
+    #reply-bar {
+      display: none;
+      align-items: center;
+      gap: 9px;
+      padding: 7px 11px;
+      background: #f0f4ff;
+      border-top: 1px solid #c7d7fb;
+      flex-shrink: 0;
+    }
+
+    #reply-bar.show {
+      display: flex;
+    }
+
+    #reply-bar-line {
+      width: 3px;
+      align-self: stretch;
+      border-radius: 3px;
+      background: var(--p);
+      flex-shrink: 0;
+    }
+
+    #reply-bar-body {
+      flex: 1;
+      min-width: 0;
+    }
+
+    #reply-bar-sender {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--p);
+      margin-bottom: 2px;
+    }
+
+    #reply-bar-text {
+      font-size: 12px;
+      color: var(--mut);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #btn-cancel-reply {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--mut);
+      display: flex;
+      padding: 3px;
+      border-radius: 5px;
+      flex-shrink: 0;
+    }
+
+    #btn-cancel-reply:hover {
+      color: #ef4444;
     }
 
     .row.them a.chat-link {
@@ -880,27 +1044,27 @@
     }
 
     .bub-img-wrap {
-  border-bottom-right-radius: 4px; /* for .row.me */
-  border-radius: var(--r);
-}
+      border-bottom-right-radius: 4px;
+      border-radius: var(--r);
+    }
 
-.row.me .bub-img-wrap {
-  border-bottom-right-radius: 4px;
-}
+    .row.me .bub-img-wrap {
+      border-bottom-right-radius: 4px;
+    }
 
-.row.them .bub-img-wrap {
-  border-bottom-left-radius: 4px;
-}
+    .row.them .bub-img-wrap {
+      border-bottom-left-radius: 4px;
+    }
 
-.row.me .bub-img-wrap div,
-.row.me [data-url-video] div {
-  color: rgba(255, 255, 255, 0.92);
-}
+    .row.me .bub-img-wrap div,
+    .row.me [data-url-video] div {
+      color: rgba(255, 255, 255, 0.92);
+    }
 
-.row.them .bub-img-wrap div,
-.row.them [data-url-video] div {
-  color: var(--txt);
-}
+    .row.them .bub-img-wrap div,
+    .row.them [data-url-video] div {
+      color: var(--txt);
+    }
 
 
     @keyframes pulse {
@@ -1131,21 +1295,35 @@
       inset: 0;
       background: rgba(0, 0, 0, .88);
       z-index: 100;
+    }
+
+    #lb.show {
+      display: flex;
       align-items: center;
       justify-content: center;
     }
 
-    #lb.show {
-      display: flex
+    #lb-inner {
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     #lb img {
-      max-width: 92%;
+      max-width: 90%;
       max-height: 90%;
       border-radius: 9px;
-      object-fit: contain
+      object-fit: contain;
+      cursor: zoom-in;
+      user-select: none;
+      transition: transform .25s;
+      transform-origin: center center;
     }
 
+    /* CHANGE 2: removed #lb-dl styles — download button removed from lightbox */
     #lb-x {
       position: absolute;
       top: 13px;
@@ -1161,89 +1339,87 @@
       display: flex;
       align-items: center;
       justify-content: center;
-    }
-
-    #lb-x:hover {
-      background: rgba(255, 255, 255, .3)
+      z-index: 101;
     }
 
     /* ─── Agents ──────────────────────────────────────────────────────── */
 
     #hd-agents {
-  display: flex;
-  align-items: center;
-  margin-top: 5px;
-}
+      display: flex;
+      align-items: center;
+      margin-top: 5px;
+    }
 
-.ag-av-wrap {
-  position: relative;
-  margin-left: 4px;
-  cursor: pointer;
-}
+    .ag-av-wrap {
+      position: relative;
+      margin-left: 4px;
+      cursor: pointer;
+    }
 
-.ag-av-wrap:first-child {
-  margin-left: 0;
-}
+    .ag-av-wrap:first-child {
+      margin-left: 0;
+    }
 
-.ag-av, .ag-av-fb {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  border: 2px solid rgba(255,255,255,.7);
-  object-fit: cover;
-  background: rgba(255,255,255,.25);
-  display: block;
-  transition: transform .15s, z-index .15s;
-}
+    .ag-av,
+    .ag-av-fb {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, .7);
+      object-fit: cover;
+      background: rgba(255, 255, 255, .25);
+      display: block;
+      transition: transform .15s, z-index .15s;
+    }
 
-.ag-av-fb {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 10px;
-  font-weight: 700;
-  color: #fff;
-}
+    .ag-av-fb {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 700;
+      color: #fff;
+    }
 
-.ag-av-wrap:hover {
-  z-index: 10;
-}
+    .ag-av-wrap:hover {
+      z-index: 10;
+    }
 
-.ag-av-wrap:hover .ag-av,
-.ag-av-wrap:hover .ag-av-fb {
-  transform: translateY(-3px) scale(1.1);
-}
+    .ag-av-wrap:hover .ag-av,
+    .ag-av-wrap:hover .ag-av-fb {
+      transform: translateY(-3px) scale(1.1);
+    }
 
-.ag-tooltip {
-  position: absolute;
-  bottom: calc(100% + 6px);
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(0,0,0,.75);
-  color: #fff;
-  font-size: 10.5px;
-  font-weight: 500;
-  white-space: nowrap;
-  padding: 3px 8px;
-  border-radius: 6px;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity .15s;
-}
+    .ag-tooltip {
+      position: absolute;
+      bottom: calc(100% + 6px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, .75);
+      color: #fff;
+      font-size: 10.5px;
+      font-weight: 500;
+      white-space: nowrap;
+      padding: 3px 8px;
+      border-radius: 6px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity .15s;
+    }
 
-.ag-tooltip::after {
-  content: '';
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  border: 4px solid transparent;
-  border-top-color: rgba(0,0,0,.75);
-}
+    .ag-tooltip::after {
+      content: '';
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 4px solid transparent;
+      border-top-color: rgba(0, 0, 0, .75);
+    }
 
-.ag-av-wrap:hover .ag-tooltip {
-  opacity: 1;
-}
+    .ag-av-wrap:hover .ag-tooltip {
+      opacity: 1;
+    }
 
     /* ─── Footer ──────────────────────────────────────────────────────── */
     #foot {
@@ -1265,7 +1441,6 @@
     <div id="hd-info">
       <div id="hd-name"></div>
       <div id="hd-agents" style="display:none"></div>
-      <div id="hd-status"><span id="hd-dot"></span> Online</div>
     </div>
     <button id="btn-close" aria-label="Close">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
@@ -1290,6 +1465,7 @@
   </div>
 
   <!-- ── Inline video player ── -->
+  <!-- CHANGE 3: removed vm-dl download button; added tap overlay; removed controls attribute -->
   <div id="vm">
     <div id="vm-top">
       <button id="vm-close">
@@ -1301,7 +1477,16 @@
       </button>
       <span id="vm-title">Video</span>
     </div>
-    <video id="vm-vid" controls playsinline></video>
+    <!-- No controls attribute — native controls hidden. Tap overlay handles play/pause. -->
+    <video id="vm-vid" playsinline></video>
+    <!-- Tap-to-play/pause overlay -->
+    <div id="vm-tap-overlay">
+      <div id="vm-play-icon">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="#fff">
+          <path d="M8 5v14l11-7z" />
+        </svg>
+      </div>
+    </div>
   </div>
 
   <!-- ── Voice recording indicator ── -->
@@ -1367,9 +1552,12 @@
   </div>
 
   <!-- ── Image lightbox ── -->
+  <!-- CHANGE 4: removed lb-dl download button entirely -->
   <div id="lb">
     <button id="lb-x">✕</button>
-    <img id="lb-img" src="" alt="full size" />
+    <div id="lb-inner">
+      <img id="lb-img" src="" alt="full size" />
+    </div>
   </div>
 
   <script>
@@ -1410,7 +1598,6 @@
               wrap.className = 'ag-av-wrap';
               wrap.style.zIndex = String(10 - i);
 
-              // Avatar
               var avEl;
               if (ag.profile_picture) {
                 avEl = document.createElement('img');
@@ -1425,7 +1612,6 @@
                 avEl = makeFallback(ag.name);
               }
 
-              // Tooltip
               var tip = document.createElement('div');
               tip.className = 'ag-tooltip';
               tip.textContent = ag.name || '';
@@ -1482,6 +1668,8 @@
       var vmVid = document.getElementById('vm-vid');
       var vmClose = document.getElementById('vm-close');
       var vmTitle = document.getElementById('vm-title');
+      var vmTapOverlay = document.getElementById('vm-tap-overlay');
+      var vmPlayIcon = document.getElementById('vm-play-icon');
 
       /* ── State ───────────────────────────────────────────────────────────── */
       var staged = null;
@@ -1519,22 +1707,161 @@
         gate.style.display = 'none'; startChat();
       }
 
-      /* ── Video modal ─────────────────────────────────────────────────────── */
+      /* ── Video modal — tap to play/pause, no native controls ────────────── */
       function openVM(url, name) {
         vmVid.src = url;
         vmTitle.textContent = name || 'Video';
         vm.classList.add('show');
+        // Show play icon initially
+        vmPlayIcon.classList.remove('hidden');
+        vmPlayIcon.querySelector('svg').innerHTML = '<path d="M8 5v14l11-7z"/>';
         vmVid.play().catch(function () { });
       }
+
       function closeVM() {
-        vmVid.pause(); vmVid.src = '';
+        vmVid.pause();
+        vmVid.src = '';
         vm.classList.remove('show');
       }
+
       vmClose.addEventListener('click', closeVM);
 
+      // Tap overlay toggles play/pause
+      vmTapOverlay.addEventListener('click', function () {
+        if (vmVid.paused) {
+          vmVid.play().catch(function () { });
+        } else {
+          vmVid.pause();
+        }
+      });
+
+      // Update icon based on play state
+      vmVid.addEventListener('play', function () {
+        // Show pause icon briefly then hide
+        vmPlayIcon.querySelector('svg').innerHTML = '<path d="M6 19h4V5H6zm8-14v14h4V5z"/>';
+        vmPlayIcon.classList.remove('hidden');
+        setTimeout(function () { vmPlayIcon.classList.add('hidden'); }, 600);
+      });
+
+      vmVid.addEventListener('pause', function () {
+        // Show play icon when paused
+        vmPlayIcon.querySelector('svg').innerHTML = '<path d="M8 5v14l11-7z"/>';
+        vmPlayIcon.classList.remove('hidden');
+      });
+
+      vmVid.addEventListener('ended', function () {
+        vmPlayIcon.querySelector('svg').innerHTML = '<path d="M8 5v14l11-7z"/>';
+        vmPlayIcon.classList.remove('hidden');
+      });
+
       /* ── Lightbox ────────────────────────────────────────────────────────── */
-      lbX.addEventListener('click', function () { lb.classList.remove('show'); });
-      lb.addEventListener('click', function (e) { if (e.target === lb) lb.classList.remove('show'); });
+      var lb = document.getElementById('lb');
+      var lbInner = document.getElementById('lb-inner');
+      var lbImg = document.getElementById('lb-img');
+      var lbX = document.getElementById('lb-x');
+      var lbZoomed = false;
+      var lbScale = 1, lbOx = 0, lbOy = 0;
+      var lbDragging = false;
+
+      function lbApplyTransform() {
+        lbImg.style.transform = 'translate(' + lbOx + 'px,' + lbOy + 'px) scale(' + lbScale + ')';
+        lbImg.style.transformOrigin = 'center center';
+      }
+
+      function lbReset() {
+        lbScale = 1; lbOx = 0; lbOy = 0; lbZoomed = false;
+        lbImg.style.cursor = 'zoom-in';
+        lbApplyTransform();
+      }
+
+      // CHANGE: no lbDl reference — download button removed
+      function openLightbox(src) {
+        lbReset();
+        lbImg.src = src;
+        lb.classList.add('show');
+      }
+
+      function closeLightbox() {
+        lb.classList.remove('show');
+        lbReset();
+      }
+
+      lbImg.addEventListener('click', function (e) {
+        if (lbDragging) return;
+        e.stopPropagation();
+        if (!lbZoomed) {
+          lbScale = 2.5; lbZoomed = true;
+          lbImg.style.cursor = 'grab';
+        } else {
+          lbReset();
+        }
+        lbApplyTransform();
+      });
+
+      lbImg.addEventListener('mousedown', function (e) {
+        if (!lbZoomed) return;
+        e.preventDefault();
+        var startX = e.clientX, startY = e.clientY;
+        var startOx = lbOx, startOy = lbOy;
+        lbImg.style.cursor = 'grabbing';
+
+        function onMove(ev) {
+          lbDragging = true;
+          lbOx = startOx + ev.clientX - startX;
+          lbOy = startOy + ev.clientY - startY;
+          lbApplyTransform();
+        }
+        function onUp() {
+          document.removeEventListener('mousemove', onMove);
+          document.removeEventListener('mouseup', onUp);
+          lbImg.style.cursor = 'grab';
+          setTimeout(function () { lbDragging = false; }, 0);
+        }
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+      });
+
+      var lbT0 = null, lbPinch0 = 0, lbScale0 = 1;
+      lbImg.addEventListener('touchstart', function (e) {
+        if (e.touches.length === 1) {
+          lbT0 = { x: e.touches[0].clientX, y: e.touches[0].clientY, ox: lbOx, oy: lbOy };
+          lbDragging = false;
+        } else if (e.touches.length === 2) {
+          lbPinch0 = Math.hypot(
+            e.touches[0].clientX - e.touches[1].clientX,
+            e.touches[0].clientY - e.touches[1].clientY
+          );
+          lbScale0 = lbScale; lbT0 = null;
+        }
+      }, { passive: true });
+
+      lbImg.addEventListener('touchmove', function (e) {
+        if (e.touches.length === 2) {
+          e.preventDefault();
+          var dist = Math.hypot(
+            e.touches[0].clientX - e.touches[1].clientX,
+            e.touches[0].clientY - e.touches[1].clientY
+          );
+          lbScale = Math.max(1, Math.min(5, lbScale0 * dist / lbPinch0));
+          lbZoomed = lbScale > 1;
+          lbImg.style.cursor = lbZoomed ? 'grab' : 'zoom-in';
+          lbApplyTransform();
+        } else if (e.touches.length === 1 && lbT0 && lbZoomed) {
+          lbDragging = true;
+          lbOx = lbT0.ox + e.touches[0].clientX - lbT0.x;
+          lbOy = lbT0.oy + e.touches[0].clientY - lbT0.y;
+          lbApplyTransform();
+        }
+      }, { passive: false });
+
+      lbImg.addEventListener('touchend', function () {
+        setTimeout(function () { lbDragging = false; }, 50);
+      });
+
+      lbX.addEventListener('click', closeLightbox);
+      lb.addEventListener('click', function (e) {
+        if (e.target === lb || e.target === lbInner) closeLightbox();
+      });
 
       /* ── Chat init ───────────────────────────────────────────────────────── */
       function startChat() {
@@ -1706,7 +2033,7 @@
           headers: { 'Content-Type': 'application/json', 'x-webhook-secret': WHS },
           body: JSON.stringify({
             merchantId: MID, channelType: 'webstore',
-            channelName: BRAND, 
+            channelName: BRAND,
             channelConversationId: sess.channelConversationId,
             customerId: sess.customerId, customerName: sess.customerName,
             customerEmail: sess.customerEmail || null,
@@ -1818,13 +2145,11 @@
         var type = m.messageType || 'text';
         var bub = '';
 
-        // ── Image bubble ──────────────────────────────────────────────────────
         if (type === 'image') {
           var url = esc(m.fileUrl || '');
           var name = esc(m.fileName || 'Image');
 
           if (m.content) {
-            // With caption: image + caption in one bubble
             bub = '<div class="bub bub-img-wrap" style="padding:0;overflow:hidden;">'
               + '<div class="img-wrapper" style="position:relative;">'
               + '<img src="' + url + '" alt="' + name + '" loading="lazy" '
@@ -1836,7 +2161,6 @@
               + '</div>'
               + '</div>';
           } else {
-            // No caption: plain image bubble
             bub = '<div class="bub-img" data-src="' + url + '">'
               + '<img src="' + url + '" alt="' + name + '" loading="lazy"/>'
               + '</div>';
@@ -1847,7 +2171,7 @@
           bub = mkVoiceBub(m);
         } else if (type === 'pdf' || type === 'excel' || type === 'file') {
           var ico = { pdf: '📄', excel: '📊', file: '📎' }[type] || '📎';
-         bub = '<a class="bub-file" href="' + esc(m.fileUrl || '#') + '" target="_blank" rel="noopener">'
+          bub = '<a class="bub-file" href="' + esc(m.fileUrl || '#') + '" target="_blank" rel="noopener">'
             + '<div class="f-ico">' + ico + '</div>'
             + '<div class="f-info">'
             + '<div class="f-name">' + esc(m.fileName || 'File') + '</div>'
@@ -1862,11 +2186,21 @@
 
         row.innerHTML = nmHtml + bub + '<div class="ts">' + editedHtml + time + tkHtml + '</div>';
 
-        var ib = row.querySelector('.bub-img, .bub-img-wrap img');
-        if (ib) ib.addEventListener('click', function () {
-          var src = this.dataset.src || this.src;
-          lbImg.src = src; lb.classList.add('show');
+        row.querySelectorAll('img[data-src], .bub-img img, .bub-img-wrap img').forEach(function (img) {
+          img.style.cursor = 'zoom-in';
+          img.addEventListener('click', function (e) {
+            e.stopPropagation();
+            openLightbox(img.dataset.src || img.src);
+          });
         });
+
+        var bubImg = row.querySelector('.bub-img[data-src]');
+        if (bubImg) {
+          bubImg.style.cursor = 'zoom-in';
+          bubImg.addEventListener('click', function () {
+            openLightbox(bubImg.dataset.src);
+          });
+        }
 
         var vb = row.querySelector('[data-url-video]');
         if (vb) vb.addEventListener('click', function () {
@@ -1993,7 +2327,6 @@
         if (!sess || !sess.conversationId) return;
         var proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         var wsUrl = proto + '//' + new URL(API).host + '/ws?merchantId=' + encodeURIComponent(MID);
-        // var wsUrl = API.replace(/^http/, 'ws') + '?merchantId=' + encodeURIComponent(MID);
         try {
           ws = new WebSocket(wsUrl);
           ws.onopen = function () {
@@ -2092,7 +2425,7 @@
         window.parent.postMessage({ type: 'CW_CLOSE' }, '*');
       });
 
-     window.addEventListener('message', function (e) {
+      window.addEventListener('message', function (e) {
         if (e.data && e.data.type === 'CW_OPENED' && sess && sess.conversationId) {
           isWidgetVisible = true;
           lastHash = '';
