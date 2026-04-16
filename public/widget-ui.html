@@ -120,6 +120,7 @@
     #msgs {
       flex: 1;
       overflow-y: auto;
+      overflow-x: hidden;
       padding: 14px 12px;
       display: flex;
       flex-direction: column;
@@ -164,12 +165,18 @@
     .row {
       display: flex;
       flex-direction: column;
-      max-width: 80%
+      max-width: 80%;
+      min-width: 0;
+      /* Prevent the bubble content from stretching wider than max-width.
+         word-break alone isn't enough — the row itself needs to shrink. */
+      width: fit-content;
     }
 
     .row.me {
       align-self: flex-end;
-      align-items: flex-end
+      align-items: flex-end;
+      /* Ensure customer bubbles never exceed 80% and long words wrap */
+      max-width: 80%;
     }
 
     .row.them {
@@ -199,6 +206,10 @@
       font-size: 13.5px;
       line-height: 1.55;
       word-break: break-word;
+      overflow-wrap: anywhere;
+      min-width: 0;
+      /* Don't let a wide bub force the row wider than max-width */
+      max-width: 100%;
     }
 
     .row.me .bub {
@@ -222,6 +233,88 @@
       font-size: 11px;
       text-align: center;
       padding: 3px 0
+    }
+
+    /* ─── Deleted message bubble ──────────────────────────────────────── */
+    .bub-deleted {
+      padding: 9px 13px;
+      border-radius: var(--r);
+      font-size: 13px;
+      line-height: 1.55;
+      font-style: italic;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .row.me .bub-deleted {
+      background: rgba(37, 99, 235, 0.45);
+      color: rgba(255, 255, 255, 0.7);
+      border-bottom-right-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .row.them .bub-deleted {
+      background: #f1f5f9;
+      color: #94a3b8;
+      border-bottom-left-radius: 4px;
+      border: 1px solid var(--bdr);
+    }
+
+    .bub-deleted-icon {
+      font-size: 14px;
+      flex-shrink: 0;
+      opacity: 0.75;
+    }
+
+    /* ─── Quoted / reply preview inside bubble ───────────────────────── */
+    .quoted-preview {
+      border-radius: 8px;
+      padding: 6px 10px;
+      margin-bottom: 5px;
+      font-size: 12px;
+      line-height: 1.45;
+      cursor: default;
+      overflow: hidden;
+    }
+
+    .row.me .quoted-preview {
+      border-left: 3px solid rgba(255, 255, 255, 0.6);
+      background: rgba(0, 0, 0, 0.15);
+    }
+
+    .row.them .quoted-preview {
+      border-left: 3px solid var(--p);
+      background: rgba(37, 99, 235, 0.07);
+    }
+
+    .quoted-preview-sender {
+      font-size: 10.5px;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+
+    .row.me .quoted-preview-sender {
+      color: rgba(255, 255, 255, 0.85);
+    }
+
+    .row.them .quoted-preview-sender {
+      color: var(--p);
+    }
+
+    .quoted-preview-text {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      opacity: 0.75;
+    }
+
+    .row.me .quoted-preview-text {
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    .row.them .quoted-preview-text {
+      color: var(--txt);
     }
 
     /* ─── Image bubble ────────────────────────────────────────────────── */
@@ -408,18 +501,15 @@
       white-space: nowrap
     }
 
-    /* CHANGE 1: Video modal — no native controls, tap overlay covers full area */
     #vm video {
       flex: 1;
       width: 100%;
       object-fit: contain;
       outline: none;
       padding-top: 44px;
-      /* hide native controls: no controls attribute + pointer-events:none so tap goes to overlay */
       pointer-events: none;
     }
 
-    /* Tap-to-play overlay for video modal */
     #vm-tap-overlay {
       position: absolute;
       inset: 44px 0 0 0;
@@ -731,7 +821,7 @@
       text-underline-offset: 2px;
     }
 
-    /* ─── Quoted / reply bubble ──────────────────────────────────────── */
+    /* ─── Quoted / reply bubble (legacy — kept for compat) ───────────── */
     .quoted {
       border-radius: 8px;
       padding: 6px 10px;
@@ -785,11 +875,34 @@
     }
 
     /* ─── Reply hint button ───────────────────────────────────────────── */
+    /* Wrap each "them" row in a .row-wrap so the hover zone covers both
+       the bubble AND the reply button — mouse never leaves the target. */
+    .row-wrap {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      align-self: flex-start;
+      /* Span the same width budget as the message list so the inner .row
+         can grow freely up to 80% of #msgs. The reply button (28px) sits
+         outside this and never compresses the bubble. */
+      width: 100%;
+      position: relative;
+    }
+
+    /* The row inside the wrapper should be free to use up to 80% of the
+       wrapper (which is 100% of #msgs minus padding). Without this override
+       the bubble is double-constrained: 80% of wrapper which is itself
+       capped, giving a very narrow column on long messages. */
+    .row-wrap>.row.them {
+      max-width: calc(100% - 36px);
+      flex: 1;
+      min-width: 0;
+    }
+
     .reply-hint {
       display: none;
-      position: absolute;
-      top: 50%;
-      transform: translateY(-50%);
+      /* hidden until parent hovered */
+      flex-shrink: 0;
       background: rgba(255, 255, 255, .92);
       border: 1px solid var(--bdr);
       border-radius: 50%;
@@ -799,20 +912,13 @@
       justify-content: center;
       box-shadow: 0 1px 6px rgba(0, 0, 0, .12);
       cursor: pointer;
-      z-index: 5;
       color: var(--p);
-      flex-shrink: 0;
+      order: 2;
+      /* always sits to the right of the bubble */
     }
 
-    .row.me .reply-hint {
-      left: -36px;
-    }
-
-    .row.them .reply-hint {
-      right: -36px;
-    }
-
-    .row:hover .reply-hint {
+    /* Show when hovering the wrapper (covers bubble + button gap) */
+    .row-wrap:hover .reply-hint {
       display: flex;
     }
 
@@ -1323,7 +1429,6 @@
       transform-origin: center center;
     }
 
-    /* CHANGE 2: removed #lb-dl styles — download button removed from lightbox */
     #lb-x {
       position: absolute;
       top: 13px;
@@ -1465,7 +1570,6 @@
   </div>
 
   <!-- ── Inline video player ── -->
-  <!-- CHANGE 3: removed vm-dl download button; added tap overlay; removed controls attribute -->
   <div id="vm">
     <div id="vm-top">
       <button id="vm-close">
@@ -1477,9 +1581,7 @@
       </button>
       <span id="vm-title">Video</span>
     </div>
-    <!-- No controls attribute — native controls hidden. Tap overlay handles play/pause. -->
     <video id="vm-vid" playsinline></video>
-    <!-- Tap-to-play/pause overlay -->
     <div id="vm-tap-overlay">
       <div id="vm-play-icon">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="#fff">
@@ -1504,6 +1606,22 @@
     <span id="prev-sz"></span>
     <button id="btn-cpf" aria-label="Remove">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+        stroke-linecap="round">
+        <line x1="18" y1="6" x2="6" y2="18" />
+        <line x1="6" y1="6" x2="18" y2="18" />
+      </svg>
+    </button>
+  </div>
+
+  <!-- ── Reply-to bar ── -->
+  <div id="reply-bar">
+    <div id="reply-bar-line"></div>
+    <div id="reply-bar-body">
+      <div id="reply-bar-sender"></div>
+      <div id="reply-bar-text"></div>
+    </div>
+    <button id="btn-cancel-reply" aria-label="Cancel reply">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
         stroke-linecap="round">
         <line x1="18" y1="6" x2="6" y2="18" />
         <line x1="6" y1="6" x2="18" y2="18" />
@@ -1552,7 +1670,6 @@
   </div>
 
   <!-- ── Image lightbox ── -->
-  <!-- CHANGE 4: removed lb-dl download button entirely -->
   <div id="lb">
     <button id="lb-x">✕</button>
     <div id="lb-inner">
@@ -1661,6 +1778,10 @@
       var recBar = document.getElementById('rec-bar');
       var recTime = document.getElementById('rec-time');
       var btnCRec = document.getElementById('btn-crec');
+      var replyBar = document.getElementById('reply-bar');
+      var replyBarSender = document.getElementById('reply-bar-sender');
+      var replyBarText = document.getElementById('reply-bar-text');
+      var btnCancelReply = document.getElementById('btn-cancel-reply');
       var lb = document.getElementById('lb');
       var lbImg = document.getElementById('lb-img');
       var lbX = document.getElementById('lb-x');
@@ -1678,6 +1799,8 @@
       var ws = null, wsReady = false;
       var audios = {};
       var isWidgetVisible = false;
+      // Reply state
+      var replyTo = null; // { quotedText, quotedSender }
 
       /* ── Boot ────────────────────────────────────────────────────────────── */
       if (UCID) {
@@ -1707,12 +1830,11 @@
         gate.style.display = 'none'; startChat();
       }
 
-      /* ── Video modal — tap to play/pause, no native controls ────────────── */
+      /* ── Video modal ─────────────────────────────────────────────────────── */
       function openVM(url, name) {
         vmVid.src = url;
         vmTitle.textContent = name || 'Video';
         vm.classList.add('show');
-        // Show play icon initially
         vmPlayIcon.classList.remove('hidden');
         vmPlayIcon.querySelector('svg').innerHTML = '<path d="M8 5v14l11-7z"/>';
         vmVid.play().catch(function () { });
@@ -1726,7 +1848,6 @@
 
       vmClose.addEventListener('click', closeVM);
 
-      // Tap overlay toggles play/pause
       vmTapOverlay.addEventListener('click', function () {
         if (vmVid.paused) {
           vmVid.play().catch(function () { });
@@ -1735,16 +1856,13 @@
         }
       });
 
-      // Update icon based on play state
       vmVid.addEventListener('play', function () {
-        // Show pause icon briefly then hide
         vmPlayIcon.querySelector('svg').innerHTML = '<path d="M6 19h4V5H6zm8-14v14h4V5z"/>';
         vmPlayIcon.classList.remove('hidden');
         setTimeout(function () { vmPlayIcon.classList.add('hidden'); }, 600);
       });
 
       vmVid.addEventListener('pause', function () {
-        // Show play icon when paused
         vmPlayIcon.querySelector('svg').innerHTML = '<path d="M8 5v14l11-7z"/>';
         vmPlayIcon.classList.remove('hidden');
       });
@@ -1774,7 +1892,6 @@
         lbApplyTransform();
       }
 
-      // CHANGE: no lbDl reference — download button removed
       function openLightbox(src) {
         lbReset();
         lbImg.src = src;
@@ -1884,12 +2001,27 @@
         btnCPF.addEventListener('click', clearStaged);
         btnVoice.addEventListener('click', function () { recOn ? stopRec(true) : startRec(); });
         btnCRec.addEventListener('click', function () { stopRec(false); });
+        btnCancelReply.addEventListener('click', clearReply);
 
         if (sess.conversationId) { fetchMsgs(); markSeen(); connectWS(); }
         else resolveConv();
       }
 
       function updSend() { btnSend.disabled = !(input.value.trim() || staged) || sending; }
+
+      /* ── Reply state ─────────────────────────────────────────────────────── */
+      function setReply(quotedText, quotedSender) {
+        replyTo = { quotedText: quotedText, quotedSender: quotedSender };
+        replyBarSender.textContent = quotedSender || 'Support';
+        replyBarText.textContent = quotedText || '';
+        replyBar.classList.add('show');
+        input.focus();
+      }
+
+      function clearReply() {
+        replyTo = null;
+        replyBar.classList.remove('show');
+      }
 
       /* ── Stage file ──────────────────────────────────────────────────────── */
       function stageFile(file) {
@@ -1959,26 +2091,32 @@
         if (!text && !staged) return;
         sending = true; btnSend.disabled = true;
         var fs = staged, tx = text;
+        var rp = replyTo; // capture reply state before clearing
         input.value = ''; input.style.height = 'auto';
         if (fs) clearStaged();
+        clearReply();
 
         if (fs) {
           addRow({
             senderType: 'customer', content: fs.file.name, messageType: fs.messageType,
             fileUrl: fs.previewUrl, fileName: fs.file.name, fileSizeBytes: fs.file.size,
-            createdAt: new Date().toISOString(), status: 'sent'
+            createdAt: new Date().toISOString(), status: 'sent',
+            quotedText: rp ? rp.quotedText : null,
+            quotedSender: rp ? rp.quotedSender : null
           });
         } else {
           addRow({
             senderType: 'customer', content: tx, messageType: 'text',
-            createdAt: new Date().toISOString(), status: 'sent'
+            createdAt: new Date().toISOString(), status: 'sent',
+            quotedText: rp ? rp.quotedText : null,
+            quotedSender: rp ? rp.quotedSender : null
           });
         }
         showTyping(true);
 
         try {
-          if (fs) await sendFile(fs.file, tx);
-          else await sendText(tx);
+          if (fs) await sendFile(fs.file, tx, rp);
+          else await sendText(tx, rp);
         } catch (e) {
           showTyping(false); sysMsg('Connection error. Check your network.');
         } finally {
@@ -1999,19 +2137,24 @@
         }
       }
 
-      async function sendText(text) {
+      async function sendText(text, rp) {
+        var body = {
+          merchantId: MID, channelType: 'webstore',
+          channelName: BRAND,
+          channelConversationId: sess.channelConversationId,
+          customerId: sess.customerId, customerName: sess.customerName,
+          customerEmail: sess.customerEmail || null,
+          customerRegion: sess.customerRegion || null,
+          content: text
+        };
+        if (rp) {
+          body.quotedText = rp.quotedText || null;
+          body.quotedSender = rp.quotedSender || null;
+        }
         var r = await fetch(API + '/webhooks/inbound', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'x-webhook-secret': WHS },
-          body: JSON.stringify({
-            merchantId: MID, channelType: 'webstore',
-            channelName: BRAND,
-            channelConversationId: sess.channelConversationId,
-            customerId: sess.customerId, customerName: sess.customerName,
-            customerEmail: sess.customerEmail || null,
-            customerRegion: sess.customerRegion || null,
-            content: text
-          }),
+          body: JSON.stringify(body),
         });
         var d = await r.json();
         if (d.success) {
@@ -2023,24 +2166,29 @@
         }
       }
 
-      async function sendFile(file, caption) {
+      async function sendFile(file, caption, rp) {
         var fd = new FormData(); fd.append('file', file); fd.append('merchantId', MID);
         var ur = await fetch(API + '/upload/widget', { method: 'POST', headers: { 'x-webhook-secret': WHS }, body: fd });
         var ud = await ur.json();
         if (!ud.success) { showTyping(false); sysMsg('Upload failed: ' + (ud.message || 'Error')); return; }
+        var body = {
+          merchantId: MID, channelType: 'webstore',
+          channelName: BRAND,
+          channelConversationId: sess.channelConversationId,
+          customerId: sess.customerId, customerName: sess.customerName,
+          customerEmail: sess.customerEmail || null,
+          customerRegion: sess.customerRegion || null,
+          content: caption || null, fileUrl: ud.fileUrl, fileName: ud.fileName,
+          fileMimeType: ud.fileMimeType, fileSizeBytes: ud.fileSizeBytes
+        };
+        if (rp) {
+          body.quotedText = rp.quotedText || null;
+          body.quotedSender = rp.quotedSender || null;
+        }
         var r = await fetch(API + '/webhooks/inbound', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'x-webhook-secret': WHS },
-          body: JSON.stringify({
-            merchantId: MID, channelType: 'webstore',
-            channelName: BRAND,
-            channelConversationId: sess.channelConversationId,
-            customerId: sess.customerId, customerName: sess.customerName,
-            customerEmail: sess.customerEmail || null,
-            customerRegion: sess.customerRegion || null,
-            content: caption || null, fileUrl: ud.fileUrl, fileName: ud.fileName,
-            fileMimeType: ud.fileMimeType, fileSizeBytes: ud.fileSizeBytes
-          }),
+          body: JSON.stringify(body),
         });
         var d = await r.json();
         if (d.success) {
@@ -2131,7 +2279,7 @@
 
         var time = new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         var nmHtml = (!isMe && m.senderName) ? '<div class="sender-nm">' + esc(m.senderName) + '</div>' : '';
-        var editedHtml = m.isEdited
+        var editedHtml = m.isEdited && m.status !== 'deleted'
           ? '<span style="font-size:10px;font-style:italic;color:var(--mut);margin-right:3px">edited</span>'
           : '';
         var tkHtml = '';
@@ -2143,7 +2291,34 @@
         }
 
         var type = m.messageType || 'text';
+        var isDeleted = m.status === 'deleted';
         var bub = '';
+
+        // ── Deleted message ── render a special tombstone bubble
+        if (isDeleted) {
+          bub = '<div class="bub-deleted">'
+            + '<span class="bub-deleted-icon">🚫</span>'
+            + '<span>This message was deleted</span>'
+            + '</div>';
+
+          row.innerHTML = nmHtml + bub + '<div class="ts">' + time + '</div>';
+          return row;
+        }
+
+        // ── Quoted/reply preview ── shown inside the bubble wrapper
+        var quotedHtml = '';
+        if (m.quotedText || m.quotedSender) {
+          var qSender = esc(m.quotedSender || (isMe ? 'Support' : 'You'));
+          var qText = esc(m.quotedText || '');
+          // Detect media-type previews
+          if (!qText) {
+            if (m.quotedMsgId) qText = '📎 Attachment';
+          }
+          quotedHtml = '<div class="quoted-preview">'
+            + '<div class="quoted-preview-sender">' + qSender + '</div>'
+            + '<div class="quoted-preview-text">' + qText + '</div>'
+            + '</div>';
+        }
 
         if (type === 'image') {
           var url = esc(m.fileUrl || '');
@@ -2151,6 +2326,7 @@
 
           if (m.content) {
             bub = '<div class="bub bub-img-wrap" style="padding:0;overflow:hidden;">'
+              + (quotedHtml ? '<div style="padding:8px 10px 0;">' + quotedHtml + '</div>' : '')
               + '<div class="img-wrapper" style="position:relative;">'
               + '<img src="' + url + '" alt="' + name + '" loading="lazy" '
               + 'style="width:100%;display:block;max-height:220px;object-fit:cover;border-radius:0;cursor:zoom-in;" '
@@ -2162,11 +2338,12 @@
               + '</div>';
           } else {
             bub = '<div class="bub-img" data-src="' + url + '">'
+              + (quotedHtml ? '<div style="padding:8px 8px 0;">' + quotedHtml + '</div>' : '')
               + '<img src="' + url + '" alt="' + name + '" loading="lazy"/>'
               + '</div>';
           }
         } else if (type === 'video') {
-          bub = mkVideoBub(m);
+          bub = mkVideoBub(m, quotedHtml);
         } else if (type === 'voice') {
           bub = mkVoiceBub(m);
         } else if (type === 'pdf' || type === 'excel' || type === 'file') {
@@ -2174,6 +2351,7 @@
           bub = '<a class="bub-file" href="' + esc(m.fileUrl || '#') + '" target="_blank" rel="noopener">'
             + '<div class="f-ico">' + ico + '</div>'
             + '<div class="f-info">'
+            + (quotedHtml ? quotedHtml : '')
             + '<div class="f-name">' + esc(m.fileName || 'File') + '</div>'
             + '<div class="f-sz">' + fmtBytes(m.fileSizeBytes) + '</div>'
             + (m.content ? '<div class="f-msg">' + linkify(esc(m.content)) + '</div>' : '')
@@ -2181,11 +2359,13 @@
             + '<svg class="f-dl" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>'
             + '</a>';
         } else {
-          bub = '<div class="bub">' + linkify(esc(m.content || '')) + '</div>';
+          // plain text — wrap quoted + text together in one bubble
+          bub = '<div class="bub">' + quotedHtml + linkify(esc(m.content || '')) + '</div>';
         }
 
         row.innerHTML = nmHtml + bub + '<div class="ts">' + editedHtml + time + tkHtml + '</div>';
 
+        // Wire up image zoom
         row.querySelectorAll('img[data-src], .bub-img img, .bub-img-wrap img').forEach(function (img) {
           img.style.cursor = 'zoom-in';
           img.addEventListener('click', function (e) {
@@ -2202,21 +2382,95 @@
           });
         }
 
+        // Wire up video open
         var vb = row.querySelector('[data-url-video]');
         if (vb) vb.addEventListener('click', function () {
           openVM(this.dataset.urlVideo, this.dataset.name);
         });
 
+        // ── Swipe-to-reply on touch + desktop reply button (them only) ──
+        if (!isMe) {
+          var bubEl = row.querySelector('.bub, .bub-img, .bub-file, .bub-voice, [data-url-video], .bub-img-wrap');
+          if (bubEl) {
+            // Touch: swipe right to trigger reply
+            var touchStartX = 0;
+            var touchStartY = 0;
+            var swiped = false;
+            bubEl.addEventListener('touchstart', function (e) {
+              touchStartX = e.touches[0].clientX;
+              touchStartY = e.touches[0].clientY;
+              swiped = false;
+            }, { passive: true });
+            bubEl.addEventListener('touchmove', function (e) {
+              if (swiped) return;
+              var dx = e.touches[0].clientX - touchStartX;
+              var dy = Math.abs(e.touches[0].clientY - touchStartY);
+              if (dx > 48 && dy < 30) {
+                swiped = true;
+                triggerReplyFor(m);
+                row.style.transition = 'transform .15s';
+                row.style.transform = 'translateX(10px)';
+                setTimeout(function () {
+                  row.style.transform = '';
+                  setTimeout(function () { row.style.transition = ''; }, 150);
+                }, 150);
+              }
+            }, { passive: true });
+          }
+
+          // Desktop: wrap row + reply button together so hover zone is continuous
+          var replyBtn = document.createElement('button');
+          replyBtn.className = 'reply-hint';
+          replyBtn.setAttribute('aria-label', 'Reply');
+          replyBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>';
+          replyBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            triggerReplyFor(m);
+          });
+
+          var wrapper = document.createElement('div');
+          wrapper.className = 'row-wrap';
+          // row goes first (order:1 by default), replyBtn gets order:2 via CSS
+          wrapper.appendChild(row);
+          wrapper.appendChild(replyBtn);
+          return wrapper;
+        }
+
         return row;
       }
 
+      /* ── Trigger reply for a message ─────────────────────────────────────── */
+      function triggerReplyFor(m) {
+        var senderLabel = m.senderName || (m.senderType === 'customer' ? 'You' : 'Support');
+        var preview = '';
+        if (m.status === 'deleted') {
+          preview = 'This message was deleted';
+        } else if (m.messageType === 'image') {
+          preview = '📷 Photo';
+        } else if (m.messageType === 'video') {
+          preview = '🎥 Video';
+        } else if (m.messageType === 'voice') {
+          preview = '🎤 Voice message';
+        } else if (m.messageType === 'pdf') {
+          preview = '📄 ' + (m.fileName || 'PDF');
+        } else if (m.messageType === 'excel') {
+          preview = '📊 ' + (m.fileName || 'Spreadsheet');
+        } else if (m.messageType === 'file') {
+          preview = '📎 ' + (m.fileName || 'File');
+        } else {
+          preview = m.content || '';
+        }
+        setReply(preview, senderLabel);
+      }
+
       /* ── Video bubble ─────────────────────────────────────────────────────  */
-      function mkVideoBub(m) {
+      function mkVideoBub(m, quotedHtml) {
         var url = esc(m.fileUrl || '');
         var name = esc(m.fileName || 'Video');
         var sz = fmtBytes(m.fileSizeBytes);
 
         return '<div class="bub" style="padding:0;overflow:hidden;cursor:pointer;" data-url-video="' + url + '" data-name="' + name + '">'
+          + (quotedHtml ? '<div style="padding:8px 10px 0;">' + quotedHtml + '</div>' : '')
           + '<div style="position:relative;">'
           + '<video class="bub-video-preview" src="' + url + '#t=0.1" muted playsinline preload="metadata" '
           + 'style="width:100%;max-height:200px;object-fit:cover;display:block;"></video>'
