@@ -2367,25 +2367,25 @@
 
         // Wire up image zoom
         row.querySelectorAll('img[data-src], .bub-img img, .bub-img-wrap img').forEach(function (img) {
-          img.style.cursor = 'zoom-in';
+          img.style.cursor = 'pointer';
           img.addEventListener('click', function (e) {
             e.stopPropagation();
-            openLightbox(img.dataset.src || img.src);
+            window.open(img.dataset.src || img.src, '_blank');
           });
         });
 
         var bubImg = row.querySelector('.bub-img[data-src]');
         if (bubImg) {
-          bubImg.style.cursor = 'zoom-in';
+          bubImg.style.cursor = 'pointer';
           bubImg.addEventListener('click', function () {
-            openLightbox(bubImg.dataset.src);
+            window.open(bubImg.dataset.src, '_blank');
           });
         }
 
         // Wire up video open
         var vb = row.querySelector('[data-url-video]');
         if (vb) vb.addEventListener('click', function () {
-          openVM(this.dataset.urlVideo, this.dataset.name);
+          window.open(this.dataset.urlVideo, '_blank');
         });
 
         // ── Swipe-to-reply on touch + desktop reply button (them only) ──

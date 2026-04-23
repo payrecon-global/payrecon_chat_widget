@@ -1,7 +1,8 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
+import path from 'path';
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
 import express from 'express';
 import cors from 'cors';
-import path from 'path';
 
 const app  = express();
 const PORT = parseInt(process.env.PORT || '4001');
