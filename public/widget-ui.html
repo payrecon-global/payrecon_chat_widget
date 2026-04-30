@@ -2010,8 +2010,8 @@
       function updSend() { btnSend.disabled = !(input.value.trim() || staged) || sending; }
 
       /* ── Reply state ─────────────────────────────────────────────────────── */
-      function setReply(quotedText, quotedSender) {
-        replyTo = { quotedText: quotedText, quotedSender: quotedSender };
+      function setReply(quotedText, quotedSender, quotedMsgId) {
+        replyTo = { quotedText: quotedText, quotedSender: quotedSender, quotedMsgId: quotedMsgId || null };
         replyBarSender.textContent = quotedSender || 'Support';
         replyBarText.textContent = quotedText || '';
         replyBar.classList.add('show');
@@ -2150,6 +2150,7 @@
         if (rp) {
           body.quotedText = rp.quotedText || null;
           body.quotedSender = rp.quotedSender || null;
+          body.quotedMsgId = rp.quotedMsgId || null;
         }
         var r = await fetch(API + '/webhooks/inbound', {
           method: 'POST',
@@ -2184,6 +2185,7 @@
         if (rp) {
           body.quotedText = rp.quotedText || null;
           body.quotedSender = rp.quotedSender || null;
+           body.quotedMsgId = rp.quotedMsgId || null;
         }
         var r = await fetch(API + '/webhooks/inbound', {
           method: 'POST',
@@ -2276,6 +2278,7 @@
         var row = document.createElement('div');
         var isMe = m.senderType === 'customer';
         row.className = 'row ' + (isMe ? 'me' : 'them');
+        if (m.id) row.dataset.msgId = m.id;
 
         var time = new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         var nmHtml = (!isMe && m.senderName) ? '<div class="sender-nm">' + esc(m.senderName) + '</div>' : '';
@@ -2310,11 +2313,11 @@
         if (m.quotedText || m.quotedSender) {
           var qSender = esc(m.quotedSender || (isMe ? 'Support' : 'You'));
           var qText = esc(m.quotedText || '');
-          // Detect media-type previews
-          if (!qText) {
-            if (m.quotedMsgId) qText = '📎 Attachment';
-          }
-          quotedHtml = '<div class="quoted-preview">'
+          if (!qText && m.quotedMsgId) qText = '📎 Attachment';
+
+          quotedHtml = '<div class="quoted-preview"'
+            + (m.quotedMsgId ? ' data-quoted-id="' + esc(String(m.quotedMsgId)) + '"' : '')
+            + ' style="cursor:' + (m.quotedMsgId ? 'pointer' : 'default') + ';">'
             + '<div class="quoted-preview-sender">' + qSender + '</div>'
             + '<div class="quoted-preview-text">' + qText + '</div>'
             + '</div>';
@@ -2460,7 +2463,7 @@
         } else {
           preview = m.content || '';
         }
-        setReply(preview, senderLabel);
+        setReply(preview, senderLabel, m.id);
       }
 
       /* ── Video bubble ─────────────────────────────────────────────────────  */
@@ -2566,6 +2569,26 @@
         var vid = e.target.id.replace('vsk_', '');
         var au = audios[vid];
         if (au && au.duration) au.currentTime = au.duration * parseFloat(e.target.value);
+      });
+
+      // ── Click quoted preview → scroll to original message ────────────────────
+      msgs.addEventListener('click', function (e) {
+        var preview = e.target.closest('.quoted-preview[data-quoted-id]');
+        if (!preview) return;
+
+        var targetId = preview.dataset.quotedId;
+        var target = msgs.querySelector('[data-msg-id="' + targetId + '"]');
+        if (!target) return;
+
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+        // Flash highlight like WhatsApp
+        target.classList.remove('row--highlight');
+        void target.offsetWidth;  // force reflow to restart animation
+        target.classList.add('row--highlight');
+        target.addEventListener('animationend', function () {
+          target.classList.remove('row--highlight');
+        }, { once: true });
       });
 
       /* ── Helpers ─────────────────────────────────────────────────────────── */
