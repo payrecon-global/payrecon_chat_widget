@@ -1694,6 +1694,7 @@
       var UCNM = q.get('customerName') || null;
       var UCEM = q.get('customerEmail') || null;
       var UCRG = q.get('customerRegion') || null;
+      var STORE_ID = q.get('storeId') || null; 
 
       document.documentElement.style.setProperty('--p', PRI);
       document.documentElement.style.setProperty('--pd', SEC);
@@ -2145,6 +2146,7 @@
           customerId: sess.customerId, customerName: sess.customerName,
           customerEmail: sess.customerEmail || null,
           customerRegion: sess.customerRegion || null,
+          storeId: STORE_ID || null,   // ← NEW
           content: text
         };
         if (rp) {
@@ -2179,13 +2181,14 @@
           customerId: sess.customerId, customerName: sess.customerName,
           customerEmail: sess.customerEmail || null,
           customerRegion: sess.customerRegion || null,
+          storeId: STORE_ID || null,   // ← NEW
           content: caption || null, fileUrl: ud.fileUrl, fileName: ud.fileName,
           fileMimeType: ud.fileMimeType, fileSizeBytes: ud.fileSizeBytes
         };
         if (rp) {
           body.quotedText = rp.quotedText || null;
           body.quotedSender = rp.quotedSender || null;
-           body.quotedMsgId = rp.quotedMsgId || null;
+          body.quotedMsgId = rp.quotedMsgId || null;
         }
         var r = await fetch(API + '/webhooks/inbound', {
           method: 'POST',
