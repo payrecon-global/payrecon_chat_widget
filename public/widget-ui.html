@@ -78,7 +78,6 @@
       white-space: nowrap;
       letter-spacing: -.01em
     }
-
     #hd-status {
       font-size: 11px;
       color: rgba(255, 255, 255, .78);
@@ -92,9 +91,22 @@
       width: 7px;
       height: 7px;
       border-radius: 50%;
+      display: inline-block;
+      transition: background .3s, box-shadow .3s;
+    }
+
+    /* Status-driven dot colors */
+    #hd-status[data-status="online"]   #hd-dot {
       background: #4ade80;
       box-shadow: 0 0 0 2px rgba(74, 222, 128, .3);
-      display: inline-block
+    }
+    #hd-status[data-status="on_break"] #hd-dot {
+      background: #fbbf24;
+      box-shadow: 0 0 0 2px rgba(251, 191, 36, .3);
+    }
+    #hd-status[data-status="offline"]  #hd-dot {
+      background: #94a3b8;
+      box-shadow: none;
     }
 
     #btn-close {
@@ -1547,6 +1559,10 @@
     <div id="hd-av">💬</div>
     <div id="hd-info">
       <div id="hd-name"></div>
+      <div id="hd-status" data-status="online">
+        <span id="hd-dot"></span>
+        <span id="hd-status-label">Online</span>
+      </div>
       <div id="hd-agents" style="display:none"></div>
     </div>
     <button id="btn-close" aria-label="Close">
@@ -1696,13 +1712,48 @@
       var SEC = q.get('secondaryColor') || '#1d4ed8';
       var BRAND = q.get('brandName') || 'Support';
       var GREET = q.get('greeting') || 'Hi there! How can we help you today?';
-      var API = q.get('apiUrl') || 'http://localhost:3000';
-      var WHS = q.get('whSecret') || '';
+      var PROXY = window.location.origin;
       var UCID = q.get('customerId') || null;
       var UCNM = q.get('customerName') || null;
       var UCEM = q.get('customerEmail') || null;
       var UCRG = q.get('customerRegion') || null;
-      var STORE_ID = q.get('storeId') || null; 
+      var STORE_ID = q.get('storeId') || null; // already exists — don't duplicate
+
+      /* ── Channel status ──────────────────────────────────────────────────────── */
+      var hdStatus = document.getElementById('hd-status');
+      var hdStatusLabel = document.getElementById('hd-status-label');
+
+      function applyChannelStatus(status, label) {
+        var safeStatus = ['online', 'on_break', 'offline'].includes(status)
+          ? status : 'online';
+        var defaultLabels = { online: 'Online', on_break: 'Away', offline: 'Offline' };
+        var safeLabel = label || defaultLabels[safeStatus] || 'Online';
+        hdStatus.setAttribute('data-status', safeStatus);
+        hdStatusLabel.textContent = safeLabel;
+      }
+
+      function fetchChannelStatus() {
+        if (!STORE_ID) return;
+        fetch(PROXY + '/widget-proxy/channel-status?storeId=' + encodeURIComponent(STORE_ID))
+          .then(function (r) { return r.json(); })
+          .then(function (d) { if (d.success) applyChannelStatus(d.status, d.label); })
+          .catch(function () { }); // silent — widget still works if this fails
+      }
+
+      var _statusPollT = null;
+      function startStatusPoll() {
+        if (_statusPollT) return;
+        _statusPollT = setInterval(fetchChannelStatus, 60000);
+      }
+      function stopStatusPoll() {
+        if (_statusPollT) { clearInterval(_statusPollT); _statusPollT = null; }
+      }
+
+      // Fetch once on load
+     if (STORE_ID) {
+        fetchChannelStatus();
+        startStatusPoll(); // keep polling until WS takes over
+      }
 
       document.documentElement.style.setProperty('--p', PRI);
       document.documentElement.style.setProperty('--pd', SEC);
@@ -1842,16 +1893,11 @@
       ];
 
       /* ── UI refs ─── (add to existing UI refs block) */
-      var gate = document.getElementById('gate');
-      var gName = document.getElementById('g-name');
       var gPhonePrefix = document.getElementById('g-phone-prefix');
       var gPhoneNum = document.getElementById('g-phone-num');
       var gPhoneHint = document.getElementById('phone-hint');
-      var gEmail = document.getElementById('g-email');
-      var gErr = document.getElementById('gate-err');
       var gPhoneErr = document.getElementById('phone-err');
-      var btnStart = document.getElementById('btn-start');
-
+      
       /* ── Populate prefix select ─────────────────────────────────────────────── */
       PHONE_REGIONS.forEach(function (r) {
         var opt = document.createElement('option');
@@ -2108,8 +2154,12 @@
         btnCRec.addEventListener('click', function () { stopRec(false); });
         btnCancelReply.addEventListener('click', clearReply);
 
-        if (sess.conversationId) { fetchMsgs(); markSeen(); connectWS(); }
-        else resolveConv();
+       if (sess.conversationId) {
+          isWidgetVisible = true; // widget is visible when startChat is called
+          fetchMsgs();
+          markSeen();
+          connectWS();
+        } else resolveConv();
       }
 
       function updSend() { btnSend.disabled = !(input.value.trim() || staged) || sending; }
@@ -2259,9 +2309,9 @@
           body.quotedSender = rp.quotedSender || null;
           body.quotedMsgId = rp.quotedMsgId || null;
         }
-        var r = await fetch(API + '/webhooks/inbound', {
+        var r = await fetch(PROXY + '/widget-proxy/inbound', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'x-webhook-secret': WHS },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
         });
         var d = await r.json();
@@ -2276,7 +2326,7 @@
 
       async function sendFile(file, caption, rp) {
         var fd = new FormData(); fd.append('file', file); fd.append('merchantId', MID);
-        var ur = await fetch(API + '/upload/widget', { method: 'POST', headers: { 'x-webhook-secret': WHS }, body: fd });
+        var ur = await fetch(PROXY + '/widget-proxy/upload', { method: 'POST', body: fd });
         var ud = await ur.json();
         if (!ud.success) { showTyping(false); sysMsg('Upload failed: ' + (ud.message || 'Error')); return; }
         var body = {
@@ -2296,9 +2346,9 @@
           body.quotedSender = rp.quotedSender || null;
           body.quotedMsgId = rp.quotedMsgId || null;
         }
-        var r = await fetch(API + '/webhooks/inbound', {
+        var r = await fetch(PROXY + '/widget-proxy/inbound', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'x-webhook-secret': WHS },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
         });
         var d = await r.json();
@@ -2314,10 +2364,7 @@
       /* ── Fetch & render ──────────────────────────────────────────────────── */
       function fetchMsgs() {
         if (!sess || !sess.conversationId) return Promise.resolve();
-        return fetch(
-          API + '/webhooks/conversations/' + sess.conversationId + '/widget-messages',
-          { headers: { 'x-webhook-secret': WHS } }
-        )
+        return fetch(PROXY + '/widget-proxy/conversations/' + sess.conversationId + '/widget-messages')
           .then(function (r) { return r.json(); })
           .then(function (d) {
             if (!d.success || !d.messages) return;
@@ -2350,20 +2397,14 @@
       async function markSeen() {
         if (!sess || !sess.conversationId) return;
         try {
-          await fetch(
-            API + '/webhooks/conversations/' + sess.conversationId + '/seen',
-            { method: 'POST', headers: { 'x-webhook-secret': WHS } }
-          );
+          await fetch(PROXY + '/widget-proxy/conversations/' + sess.conversationId + '/seen', { method: 'POST' });
         } catch (e) { }
       }
 
       async function resolveConv() {
         if (!sess || !sess.channelConversationId) return;
         try {
-          var r = await fetch(
-            API + '/webhooks/conversations/by-channel/' + encodeURIComponent(sess.channelConversationId),
-            { headers: { 'x-webhook-secret': WHS } }
-          );
+          var r = await fetch(PROXY + '/widget-proxy/conversations/by-channel/' + encodeURIComponent(sess.channelConversationId));
           var d = await r.json();
           if (d.success && d.conversationId) {
             saveSess(Object.assign({}, sess, { conversationId: d.conversationId }));
@@ -2712,15 +2753,20 @@
       function connectWS() {
         if (!sess || !sess.conversationId) return;
         var proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        var wsUrl = proto + '//' + new URL(API).host + '/ws?merchantId=' + encodeURIComponent(MID);
+        var wsUrl = proto + '//' + new URL(PROXY).host + '/ws?merchantId=' + encodeURIComponent(MID);
         try {
           ws = new WebSocket(wsUrl);
           ws.onopen = function () {
+            if (pollT) { clearTimeout(pollT); pollT = null; }
             wsReady = true;
             pollInterval = 5000;
             ws.send(JSON.stringify({ type: 'subscribe', conversationId: sess.conversationId }));
-            if (pollT) { clearTimeout(pollT); pollT = null; }
+            if (STORE_ID) {
+              ws.send(JSON.stringify({ type: 'subscribe', conversationId: 'store:' + STORE_ID }));
+            }
+            stopStatusPoll();
             fetchMsgs();
+            console.log('[WS] Connected to:', wsUrl);
           };
           ws.onmessage = function (e) {
             try {
@@ -2728,15 +2774,23 @@
               if (msg.type === 'new_message' || msg.type === 'conversation_update') {
                 fetchMsgs();
               }
+              // Live channel status update
+              if (msg.type === 'channel_status_changed' && STORE_ID && msg.storeId === STORE_ID) {
+                applyChannelStatus(msg.status, msg.label);
+              }
             } catch (_) { }
           };
           ws.onclose = function () {
             wsReady = false;
             ws = null;
             startBackoffPoll();
+            startStatusPoll(); // WS is down — fall back to polling status every 60s
             setTimeout(connectWS, 5000);
           };
-          ws.onerror = function () { ws && ws.close(); };
+         ws.onerror = function (e) {
+            console.log('[WS] Error:', e); // ADD THIS
+            ws && ws.close();
+          };
         } catch (e) {
           startBackoffPoll();
         }
@@ -2748,7 +2802,7 @@
         pollT = setTimeout(function () {
           pollT = null;
           fetchMsgs().then(function () {
-            startBackoffPoll();
+            if (!wsReady) startBackoffPoll(); // only reschedule if WS still not connected
           });
         }, pollInterval);
       }

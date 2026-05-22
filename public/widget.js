@@ -80,15 +80,13 @@
   document.body.appendChild(root);
 
   // ── Helper: build iframe URL ─────────────────────────────────────────────
-  function buildIframeUrl(apiUrl, whSecret) {
+  function buildIframeUrl() {
     var url = new URL('/widget-ui', BASE_URL);
     url.searchParams.set('merchantId',     merchantId);
     url.searchParams.set('primaryColor',   primaryColor);
     url.searchParams.set('secondaryColor', secondaryColor);
     url.searchParams.set('greeting',       greeting);
     url.searchParams.set('brandName',      brandName);
-    if (apiUrl)        url.searchParams.set('apiUrl',        apiUrl);
-    if (whSecret)      url.searchParams.set('whSecret',      whSecret);
     if (customerId)    url.searchParams.set('customerId',    customerId);
     if (customerName)  url.searchParams.set('customerName',  customerName);
     if (customerEmail) url.searchParams.set('customerEmail', customerEmail);
@@ -100,11 +98,11 @@
   // ── Fetch config from widget server, then build iframe URL ───────────────
   fetch(BASE_URL + '/widget-config')
     .then(function (r) { return r.json(); })
-    .then(function (cfg) {
-      iframe.src = buildIframeUrl(cfg.apiUrl, cfg.whSecret);
+    .then(function () {
+      iframe.src = buildIframeUrl();
     })
     .catch(function () {
-      iframe.src = buildIframeUrl('', '');
+      iframe.src = buildIframeUrl();
       console.error('[ChatWidget] Failed to load config from widget server');
     });
 
