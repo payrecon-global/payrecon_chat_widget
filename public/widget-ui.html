@@ -1764,7 +1764,7 @@
         var hdAgents = document.getElementById('hd-agents');
 
         fetch('https://v2.payrecon.co/console/api/multichat/activeSupport', {
-          headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' }
+          headers: { 'Accept': 'application/json' }
         })
           .then(function (r) { return r.json(); })
           .then(function (body) {
