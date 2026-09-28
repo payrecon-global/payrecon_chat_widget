@@ -1,0 +1,12 @@
+# Run `shopify app config link` inside this folder to fill in client_id
+# from your Shopify Partner Dashboard app.
+name = "Payrecon Chat"
+client_id = ""
+application_url = "https://webchat2.payrecon.asia"
+embedded = false
+
+[access_scopes]
+scopes = ""
+
+[webhooks]
+api_version = "2025-07"

@@ -1967,18 +1967,38 @@
           return;
         }
 
-        var id = 'anon_' + Math.random().toString(36).slice(2) + Date.now();
-        saveSess({
-          customerId: id,
-          customerName: n,
-          customerPhone: phoneResult.e164,          // stored as E.164 e.g. +60123456789
-          customerEmail: gEmail.value.trim() || null,
-          customerRegion: UCRG || null,
-          channelConversationId: id,
-          conversationId: null
+        var email = gEmail.value.trim().toLowerCase();
+        btnStart.disabled = true;
+        stableCustomerId(phoneResult.e164, email).then(function (id) {
+          btnStart.disabled = false;
+          saveSess({
+            customerId: id,
+            customerName: n,
+            customerPhone: phoneResult.e164,          // stored as E.164 e.g. +60123456789
+            customerEmail: email || null,
+            customerRegion: UCRG || null,
+            channelConversationId: id,
+            conversationId: null
+          });
+          gate.style.display = 'none';
+          startChat();
         });
-        gate.style.display = 'none';
-        startChat();
+      }
+
+      /* ── Stable identity ────────────────────────────────────────────────────
+         Same merchant + store + phone + email → same id, so the backend's
+         by-channel lookup returns the existing conversation instead of a new one. */
+      function stableCustomerId(phone, email) {
+        var key = [MID, STORE_ID || '', phone, email || ''].join('|');
+        if (!(window.crypto && crypto.subtle && window.TextEncoder)) {
+          return Promise.resolve('anon_' + encodeURIComponent(key));
+        }
+        return crypto.subtle.digest('SHA-256', new TextEncoder().encode(key)).then(function (buf) {
+          var hex = Array.prototype.map.call(new Uint8Array(buf), function (b) {
+            return ('0' + b.toString(16)).slice(-2);
+          }).join('');
+          return 'anon_' + hex.slice(0, 32);
+        });
       }
 
       /* ── Video modal ─────────────────────────────────────────────────────── */
