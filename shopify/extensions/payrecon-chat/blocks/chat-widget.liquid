@@ -1,0 +1,73 @@
+{%- comment -%}
+  App embed: merchant enables it under Online Store → Themes → Customize → App embeds.
+  Renders the Payrecon widget loader with the settings entered in the theme editor.
+{%- endcomment -%}
+{%- assign merchant_id = block.settings.merchant_id | strip -%}
+{%- assign store_id = block.settings.store_id | strip -%}
+{%- if merchant_id != blank and store_id != blank -%}
+  {%- capture widget_src -%}
+    https://webchat2.payrecon.asia/widget.js
+    ?merchantId={{ merchant_id | url_encode }}
+    &storeId={{ store_id | url_encode }}
+    &customerRegion={{ block.settings.customer_region | url_encode }}
+    &brandName={{ block.settings.brand_name | default: shop.name | url_encode }}
+    &greeting={{ block.settings.greeting | url_encode }}
+    &primaryColor={{ block.settings.primary_color | url_encode }}
+    &secondaryColor={{ block.settings.secondary_color | url_encode }}
+    &position={{ block.settings.position }}
+    {%- if customer -%}
+      &customerId={{ 'shopify_' | append: customer.id | url_encode }}
+      &customerName={{ customer.name | url_encode }}
+      &customerEmail={{ customer.email | url_encode }}
+    {%- endif -%}
+  {%- endcapture -%}
+  <script src="{{ widget_src | strip_newlines | remove: ' ' }}" defer></script>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "Payrecon Chat",
+  "target": "body",
+  "settings": [
+    { "type": "header", "content": "Account" },
+    { "type": "text", "id": "merchant_id", "label": "Merchant ID", "info": "From your Payrecon dashboard. Required." },
+    { "type": "text", "id": "store_id", "label": "Store ID", "info": "From your Payrecon dashboard. Required." },
+    {
+      "type": "select",
+      "id": "customer_region",
+      "label": "Customer region",
+      "default": "MY",
+      "options": [
+        { "value": "MY", "label": "Malaysia" },
+        { "value": "SG", "label": "Singapore" },
+        { "value": "ID", "label": "Indonesia" },
+        { "value": "TH", "label": "Thailand" },
+        { "value": "PH", "label": "Philippines" },
+        { "value": "VN", "label": "Vietnam" },
+        { "value": "TW", "label": "Taiwan" },
+        { "value": "HK", "label": "Hong Kong" },
+        { "value": "CN", "label": "China" },
+        { "value": "IN", "label": "India" },
+        { "value": "UK", "label": "United Kingdom" },
+        { "value": "US", "label": "United States" },
+        { "value": "AU", "label": "Australia" }
+      ]
+    },
+    { "type": "header", "content": "Appearance" },
+    { "type": "text", "id": "brand_name", "label": "Brand name", "info": "Defaults to your shop name." },
+    { "type": "textarea", "id": "greeting", "label": "Greeting", "default": "Hi there! How can we help you today?" },
+    { "type": "color", "id": "primary_color", "label": "Primary color", "default": "#2563eb" },
+    { "type": "color", "id": "secondary_color", "label": "Secondary color", "default": "#1d4ed8" },
+    {
+      "type": "select",
+      "id": "position",
+      "label": "Position",
+      "default": "right",
+      "options": [
+        { "value": "right", "label": "Bottom right" },
+        { "value": "left", "label": "Bottom left" }
+      ]
+    }
+  ]
+}
+{% endschema %}
